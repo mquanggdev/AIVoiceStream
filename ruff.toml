@@ -8,3 +8,8 @@ ignore = ["E501"]
 [format]
 quote-style = "double"
 indent-style = "space"
+
+[lint.per-file-ignores]
+# Script log AI do BTC cung cấp — giữ nguyên bản gốc
+"scripts/log_*.py" = ["ALL"]
+"scripts/submit_log.py" = ["ALL"]

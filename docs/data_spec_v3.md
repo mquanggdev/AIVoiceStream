@@ -89,6 +89,7 @@ cleaned_data/v3/
 | `internal_amenities` | string[] | | mỗi phần tử là **một tiện ích ngắn** (`"Bể bơi bốn mùa"`), không phải câu văn |
 | `external_amenities` | string[] | | như trên |
 | `price_per_m2_min_vnd` / `price_per_m2_max_vnd` | int\|null | | nếu nguồn có |
+| `management_fee_per_m2_vnd` | int\|null | | phí quản lý VND/m²/tháng |
 | `source_url`, `crawled_at` | string | ✅ | |
 
 ### 3.3 `buildings.jsonl`
@@ -122,13 +123,13 @@ CSV UTF-8 (có header), dấu phân cách `,`, số thập phân dùng dấu ch�
 | `area_net_m2` | float | ✅ | diện tích thông thủy (dùng để tư vấn) |
 | `door_direction` | enum | | `N` `NE` `E` `SE` `S` `SW` `W` `NW` |
 | `balcony_direction` | enum | | như trên |
-| `views` | string | | các view cách nhau bằng `\|`: `ho_ngoc_trai\|bien_ho\|noi_khu\|thanh_pho` |
+| `views` | string | | các view cách nhau bằng `\|`, view đẹp nhất đứng đầu. Từ vựng: `ho_ngoc_trai` `bien_ho` `ho_canh_quan` `vuon_nhat` `cong_vien` `noi_khu` `thanh_pho` |
 | `corner_unit` | bool | | `true`/`false` |
 | `furnishing` | enum | | `raw` \| `basic` \| `full_built_in` \| `full_furnished` |
 | `price_vnd` | int | | **giá tổng, VND số nguyên**; để trống nếu chưa có giá |
 | `price_includes_vat` | bool | | |
 | `price_includes_maintenance` | bool | | đã gồm 2% phí bảo trì chưa |
-| `price_type` | enum | ✅ | `cdt_list` (bảng giá CĐT) \| `secondary_asking` (rao bán thứ cấp) \| `secondary_sold` (đã giao dịch) \| `estimate` |
+| `price_type` | enum | nếu có giá | `cdt_list` (bảng giá CĐT) \| `secondary_asking` (rao bán thứ cấp) \| `secondary_sold` (đã giao dịch) \| `estimate`; để trống khi `price_vnd` trống |
 | `price_date` | date | nếu có giá | `2026-10-15` — giá có hiệu lực/ghi nhận ngày nào |
 | `status` | enum | ✅ | `available` \| `booked` \| `sold` \| `not_released` \| `unknown` |
 | `source_url` | string | ✅ | |
@@ -211,7 +212,7 @@ Tool crawl **không cần tự chunk**. Agent sẽ tự chia nhỏ và embed. Ch
 ```csv
 unit_code,unit_code_original,subdivision_slug,building_code,floor,floor_label,unit_type,bedrooms,bathrooms,area_gross_m2,area_net_m2,door_direction,balcony_direction,views,corner_unit,furnishing,price_vnd,price_includes_vat,price_includes_maintenance,price_type,price_date,status,source_url,crawled_at
 R1.01-1205,,the-zenpark,R1.01,12,,2PN,2,2,69.8,64.2,NW,SE,ho_ngoc_trai|noi_khu,false,full_built_in,3350000000,true,false,secondary_asking,2026-10-15,available,https://example.com/listing/123,2026-10-20T09:00:00+07:00
-R1.01-1206,,the-zenpark,R1.01,12,,STUDIO,0,1,30.1,27.5,NW,SE,noi_khu,false,full_built_in,,,,unknown,,unknown,https://example.com/listing/124,2026-10-20T09:00:00+07:00
+R1.01-1206,,the-zenpark,R1.01,12,,STUDIO,0,1,30.1,27.5,NW,SE,noi_khu,false,full_built_in,,,,,,unknown,https://example.com/listing/124,2026-10-20T09:00:00+07:00
 ```
 
 `subdivisions.jsonl` (1 dòng)

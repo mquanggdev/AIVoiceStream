@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-real-estate"
-version = "0.8.0"
-description = "AI Agent for Real Estate - VinUni AI20K Build Phase"
+version = "3.0.0"
+description = "Ocean Park Voice Agent - trợ lý tư vấn căn hộ bằng giọng nói"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -14,9 +14,8 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "python-dotenv>=1.0.0",
-    "langchain>=0.3.0",
-    "langchain-openai>=0.3.0",
-    "langgraph>=0.2.0",
+    "openai>=1.60.0",
+    "python-multipart>=0.0.20",
     "sqlalchemy>=2.0.36",
     "alembic>=1.14.0",
     "psycopg[binary]>=3.2.0",
@@ -39,7 +38,8 @@ where = ["."]
 include = ["src*"]
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 asyncio_default_test_loop_scope = "session"
 markers = [
-    "live_llm: calls the real configured LLM provider; skipped by default",
+    "live_ai: calls the real OpenRouter API (needs OPENROUTER_API_KEY); skipped by default",
 ]

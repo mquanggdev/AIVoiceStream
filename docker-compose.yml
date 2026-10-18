@@ -25,7 +25,8 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
       PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       AUTO_CREATE_TABLES: "false"
-      AUTO_SEED_CATALOG: ${AUTO_SEED_CATALOG:-true}
+    volumes:
+      - voice_data:/app/data  # ghi âm cuộc gọi + cache TTS
     command: ["sh", "-c", "python -m alembic upgrade head && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000"]
     depends_on:
       database:
@@ -54,3 +55,4 @@ services:
 
 volumes:
   postgres_data:
+  voice_data:

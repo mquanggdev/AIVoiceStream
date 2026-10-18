@@ -65,3 +65,7 @@ out/
 .ai-log/*.jsonl
 .ai-log/archive/
 .codegraph/
+
+# SQLite: file phụ (WAL/SHM) chứa dữ liệu cuộc gọi
+*.db-*
+*.sqlite3-*

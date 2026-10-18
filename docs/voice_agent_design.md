@@ -65,9 +65,9 @@ Khuyến nghị demo bằng **tai nghe** để tránh tiếng vọng.
 
 | Khâu | Mặc định | Biến môi trường | Ghi chú |
 |---|---|---|---|
-| STT | `openai/gpt-4o-mini-transcribe` | `STT_MODEL` | dự phòng: `openai/whisper-large-v3-turbo`; luôn gửi `language=vi` |
-| LLM | `google/gemini-2.5-flash` | `LLM_MODEL` | cần tool calling, độ trễ thấp, tiếng Việt tốt |
-| TTS | `google/gemini-3.8-flash-tts` | `TTS_MODEL`, `TTS_VOICE` | MP3; nếu giọng tiếng Việt chưa đạt, đổi sang `elevenlabs/eleven-flash-v2.5` |
+| STT | `openai/whisper-large-v3-turbo` | `STT_MODEL` | rẻ nhất, giữ số dạng chữ số; thay thế: `openai/gpt-4o-mini-transcribe`; luôn gửi `language=vi` |
+| LLM | `openai/gpt-4.1-mini` | `LLM_MODEL` | chọn sau khi so sánh 5 model (2026-10-18): đúng quy trình tool, trả lời ngắn, rẻ nhất. `gemini-2.5-flash` không chịu gọi tool |
+| TTS | `elevenlabs/eleven-flash-v2.5` | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | MP3, ~0,8 s/câu. Thay thế: `google/gemini-3.8-flash-tts` (rẻ hơn ~27% nhưng chậm ~3 s/câu, chỉ trả PCM → tự bọc WAV) |
 | Embedding | `openai/text-embedding-3-small` | `EMBEDDING_MODEL` | tính lúc import data, lưu trong DB |
 
 Tất cả đi qua **một key `OPENROUTER_API_KEY`**. Chất lượng tiếng Việt của STT/TTS phải được nghe thử khi có key; tham số đã tách ra `.env` để đổi model mà không sửa code.

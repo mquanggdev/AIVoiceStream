@@ -7,7 +7,7 @@
 
 import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
-import type { BadgeTone } from "@/lib/crm-labels";
+import type { BadgeTone } from "@/lib/labels";
 
 // ── Badge màu cho enum (loại khách / nhiệt độ / trạng thái...) ───────────────
 

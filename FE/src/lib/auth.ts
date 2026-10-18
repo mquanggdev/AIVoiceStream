@@ -1,34 +1,17 @@
 import { API_URL } from "./api";
 
-export type DashboardUser = {
+export type AdminUser = {
   id: number;
   email: string;
   full_name: string;
-  phone: string | null;
-  role: "admin" | "sale";
+  role: string;
   is_active: boolean;
-  avatar_url: string | null;
-  title: string | null;
-  work_shift_start: string | null;
-  work_shift_end: string | null;
-  join_date: string | null;
-};
-
-export type MeInfo = {
-  user: DashboardUser;
-  permissions: string[];
 };
 
 export const TOKEN_KEY = "ocean_park_admin_token";
 
 export function getToken() {
   return typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
-}
-
-export function hasPermission(me: MeInfo | null, code: string) {
-  if (!me) return false;
-  if (me.user.role === "admin") return true;
-  return me.permissions.includes(code);
 }
 
 export async function adminFetch(path: string, init: RequestInit = {}) {
@@ -42,4 +25,11 @@ export async function adminFetch(path: string, init: RequestInit = {}) {
     window.location.href = "/admin/login";
   }
   return response;
+}
+
+/** Tải file ghi âm (cần token) và trả về object URL để gán cho <audio>. */
+export async function fetchAudioUrl(messageId: number): Promise<string | null> {
+  const response = await adminFetch(`/admin/messages/${messageId}/audio`);
+  if (!response.ok) return null;
+  return URL.createObjectURL(await response.blob());
 }

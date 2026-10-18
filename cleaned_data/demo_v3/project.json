@@ -1,0 +1,80 @@
+{
+  "name": "Vinhomes Ocean Park Gia Lâm",
+  "aliases": [
+    "Ocean Park",
+    "Ocean Park 1",
+    "Vin Ocean Park",
+    "Vinhomes Ocean Park",
+    "Ô xin pác"
+  ],
+  "developer": "Vinhomes",
+  "location": "Gia Lâm, Hà Nội",
+  "area_ha": 420,
+  "description": "Đại đô thị khoảng 420 héc ta phía Đông Hà Nội, mô hình thành phố biển hồ với hồ Ngọc Trai 24,5ha và biển hồ nước mặn Crystal Lagoon 6,1ha; hệ sinh thái Vinschool, VinUni, Vinmec, Vincom Mega Mall; bàn giao từ 2020.",
+  "highlights": [
+    {
+      "name": "Hồ Ngọc Trai",
+      "detail": "Hồ nước ngọt trung tâm",
+      "size_ha": 24.5
+    },
+    {
+      "name": "Biển hồ Crystal Lagoon",
+      "detail": "Biển hồ nước mặn, bãi cát trắng",
+      "size_ha": 6.1
+    },
+    {
+      "name": "Đại học VinUni",
+      "detail": "Đại học tư thục chuẩn quốc tế",
+      "size_ha": null
+    },
+    {
+      "name": "Vinschool",
+      "detail": "Trường liên cấp mầm non đến THPT",
+      "size_ha": null
+    },
+    {
+      "name": "Vinmec",
+      "detail": "Phòng khám và bệnh viện",
+      "size_ha": null
+    },
+    {
+      "name": "Vincom Mega Mall Ocean Park",
+      "detail": "Trung tâm thương mại",
+      "size_ha": null
+    }
+  ],
+  "transport": [
+    {
+      "destination": "Hồ Hoàn Kiếm",
+      "distance_km": 15,
+      "drive_minutes_min": 25,
+      "drive_minutes_max": 40
+    },
+    {
+      "destination": "Quận Long Biên",
+      "distance_km": 7,
+      "drive_minutes_min": 12,
+      "drive_minutes_max": 20
+    },
+    {
+      "destination": "Cầu Thanh Trì",
+      "distance_km": 6,
+      "drive_minutes_min": 10,
+      "drive_minutes_max": 15
+    },
+    {
+      "destination": "Sân bay Nội Bài",
+      "distance_km": 35,
+      "drive_minutes_min": 45,
+      "drive_minutes_max": 60
+    },
+    {
+      "destination": "Ecopark",
+      "distance_km": 8,
+      "drive_minutes_min": 12,
+      "drive_minutes_max": 18
+    }
+  ],
+  "source_url": "demo://ocean-park/project",
+  "crawled_at": "2026-10-12T09:00:00+07:00"
+}

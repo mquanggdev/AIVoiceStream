@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     )
 
     # App
-    app_name: str = "Vinhomes AI Real Estate"
-    app_version: str = "0.8.0"
+    app_name: str = "Ocean Park Voice Agent"
+    app_version: str = "3.0.0"
     app_env: Literal["development", "staging", "production", "test"] = "development"
     app_port: int = Field(default=8000, ge=1, le=65535)
     app_host: str = "0.0.0.0"
@@ -22,35 +22,41 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     sqlalchemy_echo: bool = False
 
-    # LLM Configuration
-    llm_provider: Literal["openrouter", "openai", "custom"] = "openrouter"
-    llm_api_key: str = ""
-    llm_base_url: str = ""
-    llm_model: str = ""
-    openai_api_key: str = ""
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o-mini"
-    openai_embedding_api_key: str = ""
-    openai_embedding_base_url: str = ""
-    openai_embedding_model: str = "text-embedding-3-small"
-    openai_embedding_dimensions: int = Field(default=1536, ge=1, le=4096)
+    # OpenRouter (một key cho LLM, STT, TTS, embedding)
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_model: str = "deepseek/deepseek-chat"
-    openrouter_embedding_model: str = "openai/text-embedding-3-small"
-    openrouter_site_url: str = "https://vinhomes-ai.local"
-    openrouter_app_name: str = "Vinhomes AI Real Estate Advisor"
-    rag_embedding_provider: Literal["openai", "openrouter", "local_hash"] = "openrouter"
-    llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    openrouter_site_url: str = "https://ocean-park-voice.local"
+    openrouter_app_name: str = "Ocean Park Voice Agent"
+    # Ghi đè cho gateway OpenAI-compatible khác (tùy chọn)
+    llm_api_key: str = ""
+    llm_base_url: str = ""
+
+    llm_model: str = "openai/gpt-4.1-mini"
+    llm_temperature: float = Field(default=0.3, ge=0.0, le=1.0)
+    llm_timeout_seconds: float = Field(default=30.0, ge=1.0)
+    stt_model: str = "openai/whisper-large-v3-turbo"
+    stt_language: str = "vi"
+    tts_model: str = "elevenlabs/eleven-flash-v2.5"
+    tts_voice: str = "sarah"
+    tts_format: Literal["auto", "mp3", "pcm"] = "auto"  # auto: Gemini TTS → pcm (bọc WAV), còn lại → mp3
+    embedding_model: str = "openai/text-embedding-3-small"
+
+    # Cuộc gọi: trình duyệt ping mỗi ~20s; quá thời gian này không ping/không nói → đóng "abandoned"
+    call_inactivity_timeout_sec: int = Field(default=90, ge=30, le=3600)
+    call_sweep_interval_sec: int = Field(default=30, ge=5, le=600)
+
+    # Agent
+    agent_history_turns: int = Field(default=12, ge=2, le=40)
+    agent_max_tool_rounds: int = Field(default=4, ge=1, le=8)
 
     # Database
     database_url: str = "sqlite:///./app.db"
     auto_create_tables: bool = True
-    auto_seed_catalog: bool = True
 
-    # Chat gating (BAN_THIET_KE_V2 Mục 5.1)
-    free_message_limit: int = Field(default=3, ge=1, le=20)
-    chat_rate_limit_per_minute: int = Field(default=5, ge=1, le=60)
+    # Dữ liệu: bộ data được import khi khởi động nếu DB chưa có hoặc khác phiên bản
+    dataset_dir: str = "cleaned_data/demo_v3"
+    auto_import_dataset: bool = True
+    recordings_dir: str = "data/recordings"
 
     # Dashboard authentication
     jwt_secret_key: str = "development-only-change-me"
@@ -59,26 +65,6 @@ class Settings(BaseSettings):
     admin_email: str = "admin@oceanpark.vn"
     admin_password: str = "ChangeMe123!"
     admin_full_name: str = "Quản trị Ocean Park"
-    admin_api_key: str = "change-me-in-production"
-
-    # Project data
-    chroma_persist_dir: str = "./data/chroma"
-    vinhomes_seed_path: str = "./data/vinhomes_real.json"
-
-    # RAG retrieval
-    rag_provider: Literal["legacy", "pgvector"] = "legacy"
-    rag_top_k: int = Field(default=5, ge=1, le=20)
-    rag_vector_top_k: int = Field(default=12, ge=1, le=50)
-    rag_lexical_top_k: int = Field(default=12, ge=1, le=50)
-    rag_min_score: float = Field(default=0.05, ge=0.0, le=1.0)
-    rag_context_token_budget: int = Field(default=1200, ge=200, le=6000)
-    rag_rrf_k: int = Field(default=60, ge=1, le=200)
-    rag_vector_weight: float = Field(default=0.6, ge=0.0, le=5.0)
-    rag_lexical_weight: float = Field(default=0.4, ge=0.0, le=5.0)
-    rag_domain_boost: float = Field(default=0.08, ge=0.0, le=1.0)
-    rag_metadata_boost: float = Field(default=0.12, ge=0.0, le=1.0)
-    rag_freshness_boost: float = Field(default=0.04, ge=0.0, le=1.0)
-    rag_stale_months: int = Field(default=6, ge=1, le=60)
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -86,43 +72,16 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @property
-    def effective_llm_api_key(self) -> str:
-        """Return the API key for the selected LLM provider.
-
-        Backward compatibility:
-        - `LLM_API_KEY` works for any provider.
-        - `OPENAI_API_KEY` still works for OpenAI-compatible gateways.
-        - `OPENROUTER_API_KEY` is preferred when `LLM_PROVIDER=openrouter`.
-        """
-        if self.llm_api_key.strip():
-            return self.llm_api_key.strip()
-        if self.llm_provider == "openrouter":
-            return (self.openrouter_api_key or self.openai_api_key).strip()
-        if self.llm_provider == "openai":
-            return self.openai_api_key.strip()
-        return self.openai_api_key.strip()
+    def effective_api_key(self) -> str:
+        return (self.llm_api_key or self.openrouter_api_key).strip()
 
     @property
-    def effective_llm_base_url(self) -> str:
-        """Return the OpenAI-compatible base URL for the selected provider."""
-        if self.llm_base_url.strip():
-            return self.llm_base_url.strip()
-        if self.llm_provider == "openrouter":
-            return self.openrouter_base_url
-        if self.llm_provider == "openai":
-            return self.openai_base_url
-        return self.openai_base_url
+    def effective_base_url(self) -> str:
+        return (self.llm_base_url or self.openrouter_base_url).strip()
 
     @property
-    def effective_llm_model(self) -> str:
-        """Return the model id for the selected provider."""
-        if self.llm_model.strip():
-            return self.llm_model.strip()
-        if self.llm_provider == "openrouter":
-            return self.openrouter_model
-        if self.llm_provider == "openai":
-            return self.openai_model
-        return self.openai_model
+    def ai_configured(self) -> bool:
+        return bool(self.effective_api_key)
 
     @model_validator(mode="after")
     def validate_deployment_security(self) -> "Settings":
@@ -152,9 +111,6 @@ class Settings(BaseSettings):
             errors.append("ADMIN_PASSWORD must not use a documented default")
         if self.admin_password and len(self.admin_password) < 12:
             errors.append("ADMIN_PASSWORD must contain at least 12 characters")
-
-        if "admin_api_key" in self.model_fields_set and self.admin_api_key == "change-me-in-production":
-            errors.append("ADMIN_API_KEY must be changed before staging/production")
 
         if not self.database_url.startswith(("postgresql://", "postgresql+psycopg://")):
             errors.append("DATABASE_URL must use PostgreSQL")

@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail ?? "Không thể đăng nhập");
       localStorage.setItem(TOKEN_KEY, payload.access_token);
-      router.replace("/admin/customers");
+      router.replace("/admin");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Không thể kết nối máy chủ");
     } finally {

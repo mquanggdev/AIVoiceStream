@@ -1,30 +1,24 @@
 "use client";
 
-/** Khung admin (P2) — sidebar slate-950 + accent cyan, đồng bộ theme public site. */
+/** Khung admin — sidebar slate-950 + accent cyan, đồng bộ theme public site. */
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import Image from "next/image";
 
-import { adminFetch, hasPermission, MeInfo, TOKEN_KEY } from "@/lib/auth";
-import { roleMeta } from "@/lib/crm-labels";
+import { AdminUser, adminFetch, TOKEN_KEY } from "@/lib/auth";
 
-// Menu theo BAN_THIET_KE_V2 Mục 9.3: sale mặc định chỉ thấy Khách hàng + Hồ sơ,
-// các menu khác hiện khi được cấp quyền tương ứng.
 const navigation = [
-  { href: "/admin", label: "Thống kê", icon: "📊", permission: "dashboard.view" },
-  { href: "/admin/customers", label: "Khách hàng", icon: "👥", permission: null },
-  { href: "/admin/sales", label: "Quản lý Sale", icon: "🧑‍💼", permission: "sales.manage" },
-  { href: "/admin/permissions", label: "Phân quyền", icon: "🔐", permission: "permissions.manage" },
-  { href: "/admin/fallback-rules", label: "Mẫu trả lời", icon: "💬", permission: "fallback.manage" },
-  { href: "/admin/profile", label: "Hồ sơ cá nhân", icon: "⚙️", permission: null },
+  { href: "/admin", label: "Tổng quan", icon: "📊" },
+  { href: "/admin/calls", label: "Cuộc gọi", icon: "📞" },
+  { href: "/admin/customers", label: "Khách để lại thông tin", icon: "👥" },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [me, setMe] = useState<MeInfo | null>(null);
+  const [me, setMe] = useState<AdminUser | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -49,41 +43,31 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
   if (!me) return null;
 
-  const visibleNavigation = navigation.filter(
-    (item) => !item.permission || hasPermission(me, item.permission)
-  );
-
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 flex w-60 flex-col bg-slate-950 text-slate-300">
-        <Link className="flex items-center gap-3 px-5 py-5" href="/admin/customers">
+        <Link className="flex items-center gap-3 px-5 py-5" href="/admin">
           <Image
-            src="/media_files/advisor-avatar.jpg"
-            alt="Ocean Park Advisor"
-            width={36}
-            height={36}
+            alt="Ocean Park Voice Agent"
             className="rounded-lg object-cover"
+            height={36}
+            src="/media_files/advisor-avatar.jpg"
+            width={36}
           />
-
           <span className="text-sm font-bold text-white">
             Ocean Park
-            <span className="block text-[11px] font-medium text-slate-400">
-              Bảng điều khiển bán hàng
-            </span>
+            <span className="block text-[11px] font-medium text-slate-400">Trợ lý tư vấn giọng nói</span>
           </span>
         </Link>
 
         <nav className="mt-2 flex-1 space-y-1 px-3">
-          {visibleNavigation.map((item) => {
+          {navigation.map((item) => {
             const active =
               pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
             return (
               <Link
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
-                  active
-                    ? "bg-cyan-500/15 text-cyan-300"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  active ? "bg-cyan-500/15 text-cyan-300" : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
                 href={item.href}
                 key={item.href}
@@ -97,17 +81,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={me.user.full_name}
-              className="h-9 w-9 rounded-full object-cover ring-2 ring-cyan-400/50"
-              src={me.user.avatar_url || "/media_files/advisor-avatar.jpg"}
-            />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500/20 text-sm font-bold text-cyan-300">
+              {me.full_name.charAt(0).toUpperCase()}
+            </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{me.user.full_name}</p>
-              <p className="truncate text-xs text-slate-400">
-                {me.user.title || roleMeta[me.user.role]?.label || me.user.role}
-              </p>
+              <p className="truncate text-sm font-semibold text-white">{me.full_name}</p>
+              <p className="truncate text-xs text-slate-400">{me.email}</p>
             </div>
             <button
               className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
@@ -121,15 +100,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Workspace */}
       <div className="ml-60 flex min-h-screen flex-1 flex-col">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur">
-          <p className="text-sm font-semibold text-slate-700">Vinhomes Ocean Park 1 · Quản trị CRM</p>
-          <Link
-            className="text-sm font-semibold text-cyan-600 transition hover:text-cyan-500"
-            href="/"
-            target="_blank"
-          >
+          <p className="text-sm font-semibold text-slate-700">Vinhomes Ocean Park · Quản trị trợ lý giọng nói</p>
+          <Link className="text-sm font-semibold text-cyan-600 transition hover:text-cyan-500" href="/" target="_blank">
             Xem website ↗
           </Link>
         </header>

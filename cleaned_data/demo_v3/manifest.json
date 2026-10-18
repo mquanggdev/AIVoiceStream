@@ -1,0 +1,20 @@
+{
+  "dataset_version": "demo-v3.0.0",
+  "is_demo": true,
+  "crawled_at": "2026-10-12T09:00:00+07:00",
+  "sources": [
+    "demo://ocean-park (dữ liệu giả lập, dựa trên thông tin công khai và data v2 đã sửa lỗi)"
+  ],
+  "counts": {
+    "subdivisions": 12,
+    "buildings": 35,
+    "units": 15058,
+    "units_with_price": 5205,
+    "units_available": 4583,
+    "sales_policies": 25,
+    "knowledge_docs": 95,
+    "knowledge_words": 17256
+  },
+  "tool_version": "scripts/demo_data/build_demo_data.py",
+  "notes": "DỮ LIỆU DEMO — mã căn, giá, trạng thái và chính sách là giả lập để test hệ thống. Không dùng để tư vấn thật."
+}

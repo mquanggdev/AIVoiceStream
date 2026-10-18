@@ -2,9 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import './admin.css';
 import './admin-extra.css';
-import './conversation.css';
 
-import { ChatWidget } from '@/components/chat-widget';
+import { CallWidget } from '@/components/call-widget';
 
 export const metadata: Metadata = {
   title: 'Vinhomes Ocean Park - Đại đô thị ven hồ đẳng cấp Singapore',
@@ -28,7 +27,7 @@ export default function RootLayout({
       </head>
       <body className="font-montserrat antialiased">
         {children}
-        <ChatWidget />
+        <CallWidget />
       </body>
     </html>
   );

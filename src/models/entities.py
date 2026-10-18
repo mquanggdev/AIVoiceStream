@@ -1,31 +1,24 @@
-"""ORM schema V2 — nguồn model duy nhất của hệ thống.
+"""ORM schema v3 — Ocean Park Voice Agent.
 
-Thiết kế theo BAN_THIET_KE_V2.md Mục 4:
-- `customers` là thực thể trung tâm (gộp leads + customer_accounts cũ).
-- Khách không còn tài khoản/mật khẩu; định danh chính là số điện thoại.
-- Sale/Admin (`users`) có giải thưởng, phân khu phụ trách và phân quyền n-n.
-- Enum lưu dạng string để dễ đọc và dễ migrate.
+- Catalog theo đặc tả `docs/data_spec_v3.md`: phân khu → tòa → căn, chính sách, knowledge.
+- Cuộc gọi voice: `conversations` (1 cuộc gọi) + `messages` (mỗi lượt Khách/AI, kèm ghi âm).
+- `customers`: thông tin khách để lại qua giọng nói, admin xem được.
 """
 
-from datetime import date, datetime, time
-from decimal import Decimal
+from datetime import date, datetime
 
 from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
-    Column,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
-    Numeric,
     String,
-    Table,
     Text,
-    Time,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -40,92 +33,154 @@ class TimestampMixin:
     )
 
 
-# ── Catalog: phân khu và dữ liệu con ─────────────────────────────────────────
+# ── Catalog ──────────────────────────────────────────────────────────────────
 
 
-class Subdivision(TimestampMixin, Base):
+class DatasetVersion(Base):
+    """Mỗi lần import một bộ data (demo hoặc thật)."""
+
+    __tablename__ = "dataset_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[str] = mapped_column(String(50), index=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+    dataset_dir: Mapped[str] = mapped_column(String(500))
+    counts: Mapped[dict] = mapped_column(JSON, default=dict)
+    project: Mapped[dict] = mapped_column(JSON, default=dict)
+    notes: Mapped[str | None] = mapped_column(Text)
+    embedding_model: Mapped[str | None] = mapped_column(String(100))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Subdivision(Base):
     __tablename__ = "subdivisions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
-    introduction: Mapped[str] = mapped_column(Text)
-    location: Mapped[str] = mapped_column(Text)
-    # Dữ liệu cleaned_data có mô tả bàn giao dài (>100 ký tự) → 255
-    handover_status: Mapped[str] = mapped_column(String(255))
-    thumbnail_url: Mapped[str | None] = mapped_column(String(500))
-    display_order: Mapped[int] = mapped_column(default=0)
-    is_published: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    aliases: Mapped[list] = mapped_column(JSON, default=list)
+    parent_zone: Mapped[str | None] = mapped_column(String(255))
+    developer: Mapped[str] = mapped_column(String(255))
+    design_style: Mapped[str | None] = mapped_column(String(255))
+    num_buildings: Mapped[int | None] = mapped_column(Integer)
+    total_units: Mapped[int | None] = mapped_column(Integer)
+    handover_status: Mapped[str] = mapped_column(String(30), default="unknown")
+    handover_date: Mapped[str | None] = mapped_column(String(20))
+    handover_standard: Mapped[str | None] = mapped_column(String(30))
+    handover_standard_detail: Mapped[str | None] = mapped_column(Text)
+    ownership: Mapped[str | None] = mapped_column(String(30))
+    location_text: Mapped[str | None] = mapped_column(Text)
+    internal_amenities: Mapped[list] = mapped_column(JSON, default=list)
+    external_amenities: Mapped[list] = mapped_column(JSON, default=list)
+    price_per_m2_min_vnd: Mapped[int | None] = mapped_column(BigInteger)
+    price_per_m2_max_vnd: Mapped[int | None] = mapped_column(BigInteger)
+    management_fee_per_m2_vnd: Mapped[int | None] = mapped_column(Integer)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    source_url: Mapped[str | None] = mapped_column(String(500))
+    crawled_at: Mapped[str | None] = mapped_column(String(40))
 
-    apartment_specs: Mapped[list["ApartmentSpec"]] = relationship(
-        back_populates="subdivision", cascade="all, delete-orphan"
-    )
-    amenities: Mapped[list["Amenity"]] = relationship(
-        back_populates="subdivision", cascade="all, delete-orphan"
-    )
-    sales_policies: Mapped[list["SalesPolicy"]] = relationship(
-        back_populates="subdivision", cascade="all, delete-orphan"
-    )
-
-
-class ApartmentSpec(Base):
-    __tablename__ = "apartment_specs"
-    __table_args__ = (UniqueConstraint("subdivision_id", "unit_type"),)
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    subdivision_id: Mapped[int] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True)
-    unit_type: Mapped[str] = mapped_column(String(50))
-    area_min: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
-    area_max: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
-    area_note: Mapped[str | None] = mapped_column(String(100))
-    price_min: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    price_max: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
-    price_note: Mapped[str | None] = mapped_column(String(150))
-    currency: Mapped[str] = mapped_column(String(10), default="VND")
-
-    subdivision: Mapped[Subdivision] = relationship(back_populates="apartment_specs")
+    buildings: Mapped[list["Building"]] = relationship(back_populates="subdivision", cascade="all, delete-orphan")
 
 
-class Amenity(Base):
-    __tablename__ = "amenities"
+class Building(Base):
+    __tablename__ = "buildings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     subdivision_id: Mapped[int] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True)
-    name: Mapped[str] = mapped_column(String(255))
-    scope: Mapped[str] = mapped_column(String(20), index=True)
-    description: Mapped[str | None] = mapped_column(Text)
+    aliases: Mapped[list] = mapped_column(JSON, default=list)
+    num_floors: Mapped[int | None] = mapped_column(Integer)
+    units_per_floor: Mapped[int | None] = mapped_column(Integer)
+    num_elevators: Mapped[int | None] = mapped_column(Integer)
+    handover_status: Mapped[str | None] = mapped_column(String(30))
+    handover_date: Mapped[str | None] = mapped_column(String(20))
+    source_url: Mapped[str | None] = mapped_column(String(500))
 
-    subdivision: Mapped[Subdivision] = relationship(back_populates="amenities")
+    subdivision: Mapped[Subdivision] = relationship(back_populates="buildings")
 
 
-class SalesPolicy(TimestampMixin, Base):
+class Unit(Base):
+    __tablename__ = "units"
+    __table_args__ = (
+        Index("ix_units_search", "subdivision_id", "unit_type", "status"),
+        Index("ix_units_price", "price_vnd"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    unit_code: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    unit_code_original: Mapped[str | None] = mapped_column(String(60))
+    subdivision_id: Mapped[int] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"))
+    building_id: Mapped[int] = mapped_column(ForeignKey("buildings.id", ondelete="CASCADE"), index=True)
+    floor: Mapped[int] = mapped_column(Integer)
+    floor_label: Mapped[str | None] = mapped_column(String(10))
+    unit_type: Mapped[str] = mapped_column(String(20))
+    bedrooms: Mapped[int | None] = mapped_column(Integer)
+    bathrooms: Mapped[int | None] = mapped_column(Integer)
+    area_gross_m2: Mapped[float | None] = mapped_column(Float)
+    area_net_m2: Mapped[float] = mapped_column(Float)
+    door_direction: Mapped[str | None] = mapped_column(String(4))
+    balcony_direction: Mapped[str | None] = mapped_column(String(4))
+    views: Mapped[list] = mapped_column(JSON, default=list)
+    corner_unit: Mapped[bool] = mapped_column(Boolean, default=False)
+    furnishing: Mapped[str | None] = mapped_column(String(30))
+    price_vnd: Mapped[int | None] = mapped_column(BigInteger)
+    price_includes_vat: Mapped[bool | None] = mapped_column(Boolean)
+    price_includes_maintenance: Mapped[bool | None] = mapped_column(Boolean)
+    price_type: Mapped[str | None] = mapped_column(String(30))
+    price_date: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(20), default="unknown")
+    source_url: Mapped[str | None] = mapped_column(String(500))
+
+    subdivision: Mapped[Subdivision] = relationship()
+    building: Mapped[Building] = relationship()
+
+
+class SalesPolicy(Base):
     __tablename__ = "sales_policies"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    policy_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     subdivision_id: Mapped[int] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True)
-    title: Mapped[str] = mapped_column(String(255), default="Chính sách bán hàng")
-    policy_content: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(30), default="published", index=True)
+    policy_type: Mapped[str] = mapped_column(String(30))
+    title: Mapped[str] = mapped_column(String(255))
+    content: Mapped[str] = mapped_column(Text)
+    discount_percent: Mapped[float | None] = mapped_column(Float)
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    source_url: Mapped[str | None] = mapped_column(String(500))
 
-    subdivision: Mapped[Subdivision] = relationship(back_populates="sales_policies")
+    subdivision: Mapped[Subdivision] = relationship()
 
 
-# ── Sale/Admin: tài khoản, giải thưởng, phân khu phụ trách, phân quyền ────────
+class KnowledgeDoc(Base):
+    __tablename__ = "knowledge_docs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    doc_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    subdivision_id: Mapped[int | None] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True)
+    topic: Mapped[str] = mapped_column(String(30))
+    title: Mapped[str] = mapped_column(String(255))
+    content: Mapped[str] = mapped_column(Text)
+    source_url: Mapped[str | None] = mapped_column(String(500))
 
 
-user_subdivisions = Table(
-    "user_subdivisions",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("subdivision_id", Integer, ForeignKey("subdivisions.id", ondelete="CASCADE"), primary_key=True),
-)
+class KnowledgeChunk(Base):
+    __tablename__ = "knowledge_chunks"
 
-user_permissions = Table(
-    "user_permissions",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("permission_id", Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
-)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chunk_id: Mapped[str] = mapped_column(String(140), unique=True, index=True)
+    doc_id: Mapped[int] = mapped_column(ForeignKey("knowledge_docs.id", ondelete="CASCADE"), index=True)
+    subdivision_id: Mapped[int | None] = mapped_column(ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True)
+    topic: Mapped[str] = mapped_column(String(30))
+    title: Mapped[str] = mapped_column(String(255))
+    chunk_index: Mapped[int] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[list | None] = mapped_column(JSON)
+    embedding_model: Mapped[str | None] = mapped_column(String(100))
+
+
+# ── Admin ────────────────────────────────────────────────────────────────────
 
 
 class User(TimestampMixin, Base):
@@ -134,173 +189,71 @@ class User(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255))
-    phone: Mapped[str | None] = mapped_column(String(20))
     password_hash: Mapped[str] = mapped_column(String(500))
-    role: Mapped[str] = mapped_column(String(20), default="sale", index=True)  # admin | sale
+    role: Mapped[str] = mapped_column(String(20), default="admin", index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
-    avatar_url: Mapped[str | None] = mapped_column(String(500))
-    title: Mapped[str | None] = mapped_column(String(100))  # chức danh, VD "Chuyên viên KD"
-    work_shift_start: Mapped[time | None] = mapped_column(Time)
-    work_shift_end: Mapped[time | None] = mapped_column(Time)
-    join_date: Mapped[date | None] = mapped_column(Date)
-
-    awards: Mapped[list["SaleAward"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan", order_by="SaleAward.awarded_at.desc()"
-    )
-    subdivisions: Mapped[list[Subdivision]] = relationship(secondary=user_subdivisions)
-    permissions: Mapped[list["Permission"]] = relationship(secondary=user_permissions)
 
 
-class SaleAward(Base):
-    __tablename__ = "sale_awards"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    award_name: Mapped[str] = mapped_column(String(255))
-    awarded_at: Mapped[date] = mapped_column(Date)
-    note: Mapped[str | None] = mapped_column(Text)
-
-    user: Mapped[User] = relationship(back_populates="awards")
-
-
-class Permission(Base):
-    """Danh mục chức năng (master list) cho menu Phân quyền."""
-
-    __tablename__ = "permissions"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    code: Mapped[str] = mapped_column(String(100), unique=True, index=True)  # VD customer.view_all
-    name: Mapped[str] = mapped_column(String(255))
-    group_name: Mapped[str] = mapped_column(String(100))  # nhóm menu, VD "Khách hàng"
-
-
-# ── Khách hàng (thực thể trung tâm) ──────────────────────────────────────────
+# ── Khách hàng & cuộc gọi ────────────────────────────────────────────────────
 
 
 class Customer(TimestampMixin, Base):
-    """Khách hàng — gộp `leads` + `customer_accounts` cũ (quyết định D2).
-
-    Định danh chính là `phone`. Khách chat ẩn danh qua session_id, chỉ trở
-    thành Customer khi để lại tên + SĐT (lead capture) hoặc điền form liên hệ.
-    """
+    """Khách để lại thông tin trong cuộc gọi. Định danh chính là số điện thoại."""
 
     __tablename__ = "customers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    email: Mapped[str | None] = mapped_column(String(255))
-    # AI phân loại: real_need | investor | ghost | unknown
-    customer_type: Mapped[str] = mapped_column(String(20), default="unknown", index=True)
-    # AI chấm nhiệt độ: hot | warm | cold | unknown
-    temperature: Mapped[str] = mapped_column(String(10), default="unknown", index=True)
-    lead_score: Mapped[int | None] = mapped_column(Integer)  # 0-100, dẫn ra temperature
-    # Pipeline CRM: new | contacted | consulting | visiting | won | lost
-    status: Mapped[str] = mapped_column(String(20), default="new", index=True)
-    interested_subdivision_id: Mapped[int | None] = mapped_column(
-        ForeignKey("subdivisions.id", ondelete="SET NULL"), index=True
-    )
-    preferred_unit_type: Mapped[str | None] = mapped_column(String(50))
-    budget_min: Mapped[int | None] = mapped_column(BigInteger)  # VND
-    budget_max: Mapped[int | None] = mapped_column(BigInteger)  # VND
-    purpose: Mapped[str] = mapped_column(String(20), default="unknown")  # to_live | to_invest | unknown
-    needs_summary: Mapped[str | None] = mapped_column(Text)
-    assigned_sale_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), index=True
-    )
-    source: Mapped[str] = mapped_column(String(30), default="chat")  # chat | contact_form | manual
-    consent_contact: Mapped[bool] = mapped_column(Boolean, default=False)
-    last_contact_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    need_summary: Mapped[str | None] = mapped_column(Text)
+    interested_subdivision: Mapped[str | None] = mapped_column(String(100))
+    preferred_unit_type: Mapped[str | None] = mapped_column(String(20))
+    budget_max_vnd: Mapped[int | None] = mapped_column(BigInteger)
+    preferred_contact_time: Mapped[str | None] = mapped_column(String(255))
+    source: Mapped[str] = mapped_column(String(30), default="voice")
+    status: Mapped[str] = mapped_column(String(20), default="new", index=True)  # new | contacted | closed
 
-    assigned_sale: Mapped[User | None] = relationship()
-    interested_subdivision: Mapped[Subdivision | None] = relationship()
-    notes: Mapped[list["CustomerNote"]] = relationship(
-        back_populates="customer", cascade="all, delete-orphan", order_by="CustomerNote.created_at"
-    )
-    purchases: Mapped[list["PurchaseHistory"]] = relationship(
-        back_populates="customer", cascade="all, delete-orphan", order_by="PurchaseHistory.purchase_date.desc()"
-    )
     conversations: Mapped[list["Conversation"]] = relationship(back_populates="customer")
 
 
-class CustomerNote(Base):
-    __tablename__ = "customer_notes"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"), index=True)
-    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
-    content: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-    customer: Mapped[Customer] = relationship(back_populates="notes")
-    author: Mapped[User | None] = relationship()
-
-
-class PurchaseHistory(Base):
-    """Lịch sử mua nhà của khách: phân khu, loại căn, thời gian, giá, sale phụ trách."""
-
-    __tablename__ = "purchase_history"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"), index=True)
-    subdivision_id: Mapped[int] = mapped_column(ForeignKey("subdivisions.id", ondelete="RESTRICT"), index=True)
-    unit_type: Mapped[str] = mapped_column(String(50))
-    purchase_date: Mapped[date] = mapped_column(Date)
-    price: Mapped[int] = mapped_column(BigInteger)  # VND
-    responsible_sale_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), index=True
-    )
-    status: Mapped[str] = mapped_column(String(20), default="deposit")  # deposit | contract | handed_over
-    note: Mapped[str | None] = mapped_column(Text)
-
-    customer: Mapped[Customer] = relationship(back_populates="purchases")
-    subdivision: Mapped[Subdivision] = relationship()
-    responsible_sale: Mapped[User | None] = relationship()
-
-
-# ── Hội thoại chat ───────────────────────────────────────────────────────────
-
-
 class Conversation(Base):
+    """Một cuộc gọi voice."""
+
     __tablename__ = "conversations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    customer_id: Mapped[int | None] = mapped_column(
-        ForeignKey("customers.id", ondelete="SET NULL"), index=True
-    )
-    subdivision_id: Mapped[int | None] = mapped_column(ForeignKey("subdivisions.id", ondelete="SET NULL"))
-    user_message_count: Mapped[int] = mapped_column(Integer, default=0)  # phục vụ chặn FREE_MESSAGE_LIMIT
-    is_lead_captured: Mapped[bool] = mapped_column(Boolean, default=False)
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id", ondelete="SET NULL"), index=True)
+    channel: Mapped[str] = mapped_column(String(20), default="voice")
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)  # active | ended | abandoned
+    data_version: Mapped[str | None] = mapped_column(String(50))
+    models: Mapped[dict] = mapped_column(JSON, default=dict)
+    state: Mapped[dict] = mapped_column(JSON, default=dict)  # hồ sơ khách tạm + ngữ cảnh tool gần nhất
+    turn_count: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    duration_sec: Mapped[float | None] = mapped_column(Float)
 
     messages: Mapped[list["Message"]] = relationship(
-        cascade="all, delete-orphan", order_by="Message.created_at"
+        back_populates="conversation", cascade="all, delete-orphan", order_by="Message.id"
     )
     customer: Mapped[Customer | None] = relationship(back_populates="conversations")
 
 
 class Message(Base):
+    """Một lượt nói. role = customer | ai."""
+
     __tablename__ = "messages"
-    __table_args__ = (Index("ix_messages_conversation_created", "conversation_id", "created_at"),)
+    __table_args__ = (Index("ix_messages_conversation_turn", "conversation_id", "turn_index"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
-    role: Mapped[str] = mapped_column(String(20))  # user | ai | system
+    turn_index: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(20))
     content: Mapped[str] = mapped_column(Text)
-    meta: Mapped[dict | None] = mapped_column(JSON)  # citations, detected_intent, score_delta...
+    audio_path: Mapped[str | None] = mapped_column(String(500))
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-
-# ── Fallback rules ───────────────────────────────────────────────────────────
-
-
-class FallbackRule(TimestampMixin, Base):
-    __tablename__ = "fallback_rules"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    keyword: Mapped[str] = mapped_column(String(255), unique=True)
-    response_message: Mapped[str] = mapped_column(Text)
-    priority: Mapped[int] = mapped_column(default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")

@@ -5,10 +5,9 @@ pydantic>=2.10.0
 pydantic-settings>=2.7.0
 python-dotenv>=1.0.0
 
-# AI / LangChain
-langchain>=0.3.0
-langchain-openai>=0.3.0
-langgraph>=0.2.0
+# AI (OpenRouter qua SDK OpenAI-compatible)
+openai>=1.60.0
+python-multipart>=0.0.20
 
 # Database
 sqlalchemy>=2.0.36
@@ -18,9 +17,6 @@ aiosqlite>=0.20.0
 email-validator>=2.2.0
 PyJWT>=2.10.0
 pwdlib[argon2]>=0.2.0
-
-# Vector Store (uncomment as needed)
-# chromadb>=0.5.0
 
 # Dev tools
 ruff>=0.8.0
