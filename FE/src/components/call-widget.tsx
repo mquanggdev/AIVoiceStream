@@ -243,14 +243,14 @@ export function CallWidget() {
                   }`}
                 />
                 <Image
-                  alt="Trợ lý tư vấn Mai"
+                  alt="Trợ lý tư vấn ADMIN"
                   className="relative rounded-full object-cover ring-4 ring-slate-800"
                   height={112}
                   src="/media_files/advisor-avatar.jpg"
                   width={112}
                 />
               </div>
-              <h2 className="mt-5 text-xl font-bold">Mai</h2>
+              <h2 className="mt-5 text-xl font-bold">ADMIN</h2>
               <p className="text-sm text-slate-400">Trợ lý tư vấn căn hộ</p>
               <p className="mt-4 flex h-6 items-center gap-2 text-sm font-semibold text-cyan-200">
                 {state === "thinking" ? <Dots /> : null}

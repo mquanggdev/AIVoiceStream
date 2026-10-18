@@ -128,7 +128,6 @@ export default function Header() {
               <Phone size={18} />
               <span>0946.666.086</span>
             </a>
-            <button className="btn-primary">Đăng ký tư vấn</button>
           </div>
 
           {/* Mobile Menu Button */}

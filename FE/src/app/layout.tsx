@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import './admin.css';
-import './admin-extra.css';
 
 import { CallWidget } from '@/components/call-widget';
 

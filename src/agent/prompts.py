@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-ASSISTANT_NAME = "Mai"
+ASSISTANT_NAME = "ADMIN"
 
 GREETING_TEXT = (
     f"Dạ em chào anh chị, em là {ASSISTANT_NAME}, trợ lý tư vấn căn hộ Vinhomes Ocean Park. "

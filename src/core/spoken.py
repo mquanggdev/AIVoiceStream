@@ -185,6 +185,7 @@ MARKDOWN_RE = re.compile(r"(\*\*|__|`|#+\s|^\s*[-*•]\s+)", re.MULTILINE)
 CITATION_RE = re.compile(r"\[C\d+\]")
 LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 ABBREVIATIONS = {
+    r"\bADMIN\b": "Át-min",  # tên trợ lý — tránh TTS đánh vần từng chữ cái
     r"\bCĐT\b": "chủ đầu tư",
     r"\bHĐMB\b": "hợp đồng mua bán",
     r"\bPN\b": "phòng ngủ",

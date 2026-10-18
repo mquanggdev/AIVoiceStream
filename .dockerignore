@@ -1,11 +1,7 @@
 .git
 .github
 .gitignore
-.agents
 .claude
-.codex
-.cursor
-.gemini
 .env
 .env.*
 .venv
@@ -13,9 +9,7 @@ __pycache__
 *.pyc
 .pytest_cache
 .ruff_cache
-.ai-log
 docs/
-presentation/
 eval/
 *.md
 !requirements.txt

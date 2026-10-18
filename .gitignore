@@ -61,10 +61,10 @@ out/
 *.pyc
 *.pyo
 
-# AI logs — tracked structure, ignored content
-.ai-log/*.jsonl
-.ai-log/archive/
 .codegraph/
+
+# Next.js build info
+*.tsbuildinfo
 
 # SQLite: file phụ (WAL/SHM) chứa dữ liệu cuộc gọi
 *.db-*
