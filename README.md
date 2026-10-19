@@ -17,9 +17,6 @@ ghi nhận tên và số điện thoại khách đọc ra, và lưu toàn bộ c
 - [Chạy local](#chạy-local)
 - [Kịch bản test hội thoại](#kịch-bản-test-hội-thoại)
 - [Kiểm thử tự động và đánh giá](#kiểm-thử-tự-động-và-đánh-giá)
-- [Triển khai (Vercel + backend)](#triển-khai-vercel--backend)
-- [Dữ liệu](#dữ-liệu)
-- [Chi phí và độ trễ](#chi-phí-và-độ-trễ)
 - [Hạn chế](#hạn-chế)
 - [Tài liệu](#tài-liệu)
 
@@ -218,50 +215,6 @@ Thử thêm: đọc thiếu số (“không chín một hai ba”) → agent ph�
 
 Mỗi cuộc gọi trong admin có nút **Xuất JSON đánh giá** (transcript, ghi âm, độ trễ từng khâu, tool, kết quả kiểm tra số liệu, chi phí).
 
-## Triển khai (Vercel + backend)
-
-Dự án có hai phần, triển khai riêng:
-
-| Phần | Nơi triển khai | Ghi chú |
-|---|---|---|
-| **Frontend** (`FE/`) | **Vercel** | Import repo, đặt **Root Directory = `FE`**, framework Next.js. Biến môi trường: `NEXT_PUBLIC_API_URL=https://<backend>/api/v1` |
-| **Backend** (FastAPI) | Máy chủ chạy liên tục: Render, Railway, Fly.io, hoặc VPS bằng `Dockerfile` / `docker-compose.yml` có sẵn | Cần **PostgreSQL** và **ổ lưu trữ bền** cho ghi âm (`RECORDINGS_DIR`) |
-
-**Vì sao không nên đặt backend lên Vercel:** Vercel chạy hàm serverless, ổ đĩa không bền nên SQLite và file ghi âm sẽ mất.
-Tác vụ nền đóng cuộc gọi treo cũng không chạy được, và mỗi lần khởi động nguội đều import lại dữ liệu.
-Nếu bắt buộc dùng Vercel cho backend, cần chuyển sang PostgreSQL bên ngoài (ví dụ Neon), lưu ghi âm lên object storage,
-và thay tác vụ nền bằng cron.
-
-**Checklist production:**
-- `APP_ENV=production`, `AUTO_CREATE_TABLES=false`, chạy `alembic upgrade head` trước khi start.
-- `JWT_SECRET_KEY` ≥ 32 ký tự ngẫu nhiên, `ADMIN_PASSWORD` mạnh (backend từ chối khởi động nếu dùng giá trị mặc định).
-- `CORS_ORIGINS` = domain Vercel (chỉ HTTPS).
-- **Trình duyệt chỉ cho dùng micro trên HTTPS** (hoặc localhost), nên cả frontend và backend phải có HTTPS.
-
-## Dữ liệu
-
-- Đặc tả dữ liệu cho tool crawl: [docs/data_spec_v3.md](docs/data_spec_v3.md).
-- Data demo: 12 phân khu, 35 tòa, 15.058 căn, 25 chính sách, 95 tài liệu. Sinh lại bằng `python scripts/demo_data/build_demo_data.py`.
-- Chuyển sang data thật: đặt vào `cleaned_data/v3/`, rồi:
-
-```bash
-.venv/Scripts/python scripts/validate_data.py cleaned_data/v3
-```
-
-```bash
-.venv/Scripts/python scripts/import_data.py --dataset cleaned_data/v3 --embed
-```
-
-  và đổi `DATASET_DIR=cleaned_data/v3` trong `.env`. Không cần sửa code.
-
-## Chi phí và độ trễ
-
-Đo thực tế ngày 18/10/2026:
-
-- **~$0,0035 mỗi lượt nói**, ~$0,035 cho cuộc gọi 10 lượt. TTS chiếm ~79%, LLM ~19%, STT ~3%.
-- **3,2–4,1 s** từ lúc server nhận âm thanh đến tiếng agent đầu tiên (STT ~1 s, LLM ~1,5 s, TTS ~0,9 s).
-  Cộng 0,7 s chờ khách ngừng nói, khách cảm nhận khoảng 4–5 s.
-
 ## Hạn chế
 
 - Kiến trúc theo lượt (STT → LLM → TTS), chưa phải cuộc gọi hai chiều liên tục; độ trễ còn 4–5 s.
@@ -273,13 +226,6 @@ và thay tác vụ nền bằng cron.
 
 - [docs/voice_agent_design.md](docs/voice_agent_design.md) — thiết kế hệ thống
 - [docs/data_spec_v3.md](docs/data_spec_v3.md) — đặc tả dữ liệu
-
-## Nhóm
-
-| Thành viên | Vai trò |
-|---|---|
-| YenPhuong | AI / RAG / Evaluation |
-| MinhQuang | FE / BE / Integration |
 
 ## License
 
