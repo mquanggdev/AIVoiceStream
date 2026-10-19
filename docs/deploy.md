@@ -21,7 +21,7 @@ Repo đã có sẵn [render.yaml](../render.yaml) (Blueprint): 1 web service ch�
    | `OPENROUTER_API_KEY` | Key OpenRouter |
    | `ADMIN_EMAIL` | Email đăng nhập trang admin |
    | `ADMIN_PASSWORD` | Mật khẩu admin, **≥ 12 ký tự**, không dùng mật khẩu mặc định |
-   | `CORS_ORIGINS` | Domain Vercel, vd. `https://aivoicestream.vercel.app`. Chưa biết thì điền tạm rồi sửa sau bước 2 |
+   | `CORS_ORIGINS` | Domain Vercel, vd. `https://ai-voice-stream.vercel.app`. Chưa biết thì điền tạm rồi sửa sau bước 2 |
 
    `JWT_SECRET_KEY` do Render tự sinh; `DATABASE_URL` tự nối với database.
 3. Bấm **Apply**. Lần đầu build khoảng 3–5 phút. Khi khởi động, container sẽ:
@@ -39,7 +39,7 @@ Repo đã có sẵn [render.yaml](../render.yaml) (Blueprint): 1 web service ch�
 3. **Environment Variables**: `NEXT_PUBLIC_API_URL` = `https://<tên-service>.onrender.com/api/v1`.
 4. Bấm **Deploy**.
 5. Lấy domain Vercel vừa cấp, quay lại Render → service → **Environment** → sửa `CORS_ORIGINS` cho đúng domain đó. Render sẽ tự deploy lại.
-   Preview deploy (`aivoicestream-git-…vercel.app`) đã được cho phép qua `CORS_ORIGIN_REGEX`. Nếu đặt tên project Vercel khác `aivoicestream`, sửa regex này.
+   Preview deploy (`ai-voice-stream-git-…vercel.app`) đã được cho phép qua `CORS_ORIGIN_REGEX`. Nếu đặt tên project Vercel khác `ai-voice-stream`, sửa regex này.
 
 > `NEXT_PUBLIC_API_URL` được gắn vào code lúc build: đổi giá trị thì phải **Redeploy** trên Vercel.
 

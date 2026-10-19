@@ -32,12 +32,12 @@ services:
       # Ít nhất 12 ký tự, không dùng mật khẩu mặc định
       - key: ADMIN_PASSWORD
         sync: false
-      # Domain Vercel, vd. https://aivoicestream.vercel.app (nhiều domain cách nhau dấu phẩy)
+      # Domain Vercel, vd. https://ai-voice-stream.vercel.app (nhiều domain cách nhau dấu phẩy)
       - key: CORS_ORIGINS
         sync: false
       # Cho phép preview deploy của Vercel
       - key: CORS_ORIGIN_REGEX
-        value: https://aivoicestream(-[a-z0-9-]+)?\.vercel\.app
+        value: https://ai-voice-stream(-[a-z0-9-]+)?\.vercel\.app
 
 databases:
   - name: aivoicestream-db
