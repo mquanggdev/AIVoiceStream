@@ -69,3 +69,6 @@ out/
 # SQLite: file phụ (WAL/SHM) chứa dữ liệu cuộc gọi
 *.db-*
 *.sqlite3-*
+
+# Demo video narration (local only)
+demo_narration/
