@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -22,7 +22,7 @@ from src.models.schemas import (
     MessageResponse,
 )
 from src.voice.pipeline import sweep_stale_calls
-from src.voice.recordings import resolve_recording
+from src.voice.recordings import load_recording, media_type_for
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(get_current_user)])
 
@@ -181,17 +181,19 @@ def export_conversation(conversation_id: int, db: Session = Depends(get_db)) -> 
 
 
 @router.get("/messages/{message_id}/audio", summary="Tải file ghi âm của một lượt")
-def message_audio(message_id: int, db: Session = Depends(get_db)) -> FileResponse:
+def message_audio(message_id: int, db: Session = Depends(get_db)) -> Response:
     message = db.get(Message, message_id)
     if message is None or not message.audio_path:
         raise HTTPException(status_code=404, detail="Lượt này không có ghi âm")
-    path = resolve_recording(message.audio_path)
-    if path is None:
+    data = load_recording(message.audio_path)
+    if data is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy file ghi âm")
-    media_type = {"wav": "audio/wav", "mp3": "audio/mpeg", "webm": "audio/webm", "ogg": "audio/ogg"}.get(
-        path.suffix.lstrip("."), "application/octet-stream"
+    filename = message.audio_path.rsplit("/", 1)[-1]
+    return Response(
+        content=data,
+        media_type=media_type_for(message.audio_path),
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
     )
-    return FileResponse(path, media_type=media_type, filename=path.name)
 
 
 @router.get("/customers", response_model=list[CustomerResponse])

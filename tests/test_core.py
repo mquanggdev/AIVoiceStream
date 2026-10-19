@@ -58,3 +58,23 @@ def test_normalize_phone_ok(raw, expected):
 def test_normalize_phone_invalid(raw):
     phone, error = normalize_phone(raw)
     assert phone is None and error
+
+
+def test_database_url_uses_psycopg_driver():
+    from src.config import Settings
+
+    assert Settings(database_url="postgres://u:p@h/db").database_url == "postgresql+psycopg://u:p@h/db"
+    assert Settings(database_url="postgresql://u:p@h/db").database_url == "postgresql+psycopg://u:p@h/db"
+    assert Settings(database_url="sqlite:///./app.db").database_url == "sqlite:///./app.db"
+
+
+def test_recordings_db_storage_roundtrip(client, monkeypatch):
+    from src.config import get_settings
+    from src.voice.recordings import load_recording, media_type_for, save_recording
+
+    monkeypatch.setattr(get_settings(), "recordings_storage", "db")
+    key = save_recording("call-db", 1, "customer", b"RIFFdata", "wav")
+    assert key == "call-db/001_customer.wav"
+    assert load_recording(key) == b"RIFFdata"
+    assert media_type_for(key) == "audio/wav"
+    assert load_recording("call-db/missing.wav") is None

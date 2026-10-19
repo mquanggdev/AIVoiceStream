@@ -17,6 +17,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     func,
@@ -257,3 +258,13 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class RecordingBlob(Base):
+    """Ghi âm lưu trong DB khi RECORDINGS_STORAGE=db; path trùng với messages.audio_path."""
+
+    __tablename__ = "recording_blobs"
+
+    path: Mapped[str] = mapped_column(String(500), primary_key=True)
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
+    # Regex cho domain động (vd. preview Vercel: https://aivoicestream-.*\.vercel\.app)
+    cors_origin_regex: str | None = None
     sqlalchemy_echo: bool = False
 
     # OpenRouter (một key cho LLM, STT, TTS, embedding)
@@ -57,6 +59,10 @@ class Settings(BaseSettings):
     dataset_dir: str = "cleaned_data/demo_v3"
     auto_import_dataset: bool = True
     recordings_dir: str = "data/recordings"
+    # file: ghi ra recordings_dir; db: lưu trong bảng recording_blobs (host không có ổ đĩa bền, vd. Render free)
+    recordings_storage: Literal["file", "db"] = "file"
+    # Tự embed knowledge chunk còn thiếu khi khởi động (chạy nền, cần API key)
+    auto_embed_knowledge: bool = False
 
     # Dashboard authentication
     jwt_secret_key: str = "development-only-change-me"
@@ -65,6 +71,15 @@ class Settings(BaseSettings):
     admin_email: str = "admin@oceanpark.vn"
     admin_password: str = "ChangeMe123!"
     admin_full_name: str = "Quản trị Ocean Park"
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        """Render/Heroku cấp postgres:// hoặc postgresql:// — chuyển sang driver psycopg 3 đã cài."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value[len(prefix):]
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

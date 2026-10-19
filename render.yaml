@@ -1,0 +1,47 @@
+# Render Blueprint: backend FastAPI (Docker) + PostgreSQL.
+# Render Dashboard → New → Blueprint → chọn repo này. Các biến sync: false sẽ được hỏi khi tạo.
+services:
+  - type: web
+    name: aivoicestream-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /ready
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aivoicestream-db
+          property: connectionString
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      # Gói free không có ổ đĩa bền: ghi âm lưu trong PostgreSQL
+      - key: RECORDINGS_STORAGE
+        value: db
+      - key: AUTO_EMBED_KNOWLEDGE
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      # Ít nhất 12 ký tự, không dùng mật khẩu mặc định
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Domain Vercel, vd. https://aivoicestream.vercel.app (nhiều domain cách nhau dấu phẩy)
+      - key: CORS_ORIGINS
+        sync: false
+      # Cho phép preview deploy của Vercel
+      - key: CORS_ORIGIN_REGEX
+        value: https://aivoicestream(-[a-z0-9-]+)?\.vercel\.app
+
+databases:
+  - name: aivoicestream-db
+    plan: free
+    region: singapore
+    databaseName: ocean_park
+    user: ocean_app

@@ -17,3 +17,10 @@ eval/
 Dockerfile
 docker-compose.yml
 FE/
+
+# Dữ liệu local, không đưa vào image
+app.db*
+data/
+demo_narration/
+*.egg-info/
+tests/

@@ -8,9 +8,10 @@ from sqlalchemy import text
 
 from src.api.routes import router
 from src.config import get_settings
-from src.dataset.importer import ensure_dataset
+from src.dataset.importer import embed_missing_chunks, ensure_dataset
 from src.db.seed_admin import seed_admin
 from src.db.session import get_engine, get_session_factory, init_database
+from src.retrieval.knowledge import reset_index
 from src.voice.pipeline import sweep_stale_calls
 
 logger = logging.getLogger(__name__)
@@ -31,10 +32,25 @@ async def lifespan(app: FastAPI):
     if not settings.ai_configured:
         logger.warning("OPENROUTER_API_KEY chưa được cấu hình: cuộc gọi voice sẽ không trả lời được")
     sweeper = asyncio.create_task(_sweep_calls_forever(settings.call_inactivity_timeout_sec, settings.call_sweep_interval_sec))
+    embedder = asyncio.create_task(_embed_knowledge()) if settings.auto_embed_knowledge and settings.ai_configured else None
     yield
+    if embedder is not None:
+        embedder.cancel()
     sweeper.cancel()
     with suppress(asyncio.CancelledError):
         await sweeper
+
+
+async def _embed_knowledge() -> None:
+    """Embed chunk còn thiếu (lần deploy đầu); trong lúc chờ, tìm tài liệu dùng BM25."""
+    try:
+        with get_session_factory()() as session:
+            count = await embed_missing_chunks(session)
+        if count:
+            reset_index()
+            logger.info("Đã embed %d knowledge chunk", count)
+    except Exception:  # noqa: BLE001 - lỗi embed không được làm sập server
+        logger.exception("embed_missing_chunks failed")
 
 
 async def _sweep_calls_forever(timeout_sec: int, interval_sec: int) -> None:
@@ -68,7 +84,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     # Dev: chấp nhận mọi cổng localhost (FE có thể tự nhảy cổng khi 3000/3001 bận)
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+" if settings.app_env == "development" else None,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+" if settings.app_env == "development" else (settings.cors_origin_regex or None),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],

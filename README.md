@@ -226,6 +226,7 @@ Mỗi cuộc gọi trong admin có nút **Xuất JSON đánh giá** (transcript,
 
 - [docs/voice_agent_design.md](docs/voice_agent_design.md) — thiết kế hệ thống
 - [docs/data_spec_v3.md](docs/data_spec_v3.md) — đặc tả dữ liệu
+- [docs/deploy.md](docs/deploy.md) — deploy Render + Vercel
 
 ## License
 
